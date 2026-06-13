@@ -1,0 +1,61 @@
+name: Publish npm package
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install package test tools
+        run: |
+          set -euo pipefail
+          tool_dir="${RUNNER_TEMP}/eldwin-package-tools"
+          extra_packages="$(node -e 'const packageJson = require("./package.json"); const deps = { ...(packageJson.dependencies ?? {}), ...(packageJson.devDependencies ?? {}) }; const packages = Object.entries(deps).filter(([name]) => name !== "@eldwin-ai/eldwin" && !name.startsWith("@eldwin-ai/extension-")).map(([name, version]) => name + "@" + version); console.log(packages.join(" "));')"
+          npm install --prefix "${tool_dir}" @eldwin-ai/eldwin@^0.1.3 vitest@^4.1.8 ${extra_packages}
+          mkdir -p node_modules
+          for package_path in "${tool_dir}"/node_modules/*; do
+            package_name="$(basename "${package_path}")"
+            if [ "${package_name}" = ".bin" ]; then
+              continue
+            fi
+            if [ "${package_name#@}" != "${package_name}" ]; then
+              mkdir -p "node_modules/${package_name}"
+              for scoped_package_path in "${package_path}"/*; do
+                ln -s "${scoped_package_path}" "node_modules/${package_name}/$(basename "${scoped_package_path}")"
+              done
+            else
+              ln -s "${package_path}" "node_modules/${package_name}"
+            fi
+          done
+          mkdir -p node_modules/.bin
+          ln -s "${tool_dir}/node_modules/.bin/eldwin-package-test" node_modules/.bin/eldwin-package-test
+
+      - name: Test package contract
+        run: npm test
+
+      - name: Publish package
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          name="$(node -p "require('./package.json').name")"
+          version="$(node -p "require('./package.json').version")"
+          if npm view "${name}@${version}" version >/dev/null 2>&1; then
+            echo "${name}@${version} is already published; skipping."
+          else
+            npm publish --access public
+          fi
