@@ -18,10 +18,10 @@
     "src"
   ],
   "scripts": {
-    "test": "npm exec -- eldwin-package-test",
-    "test:unit": "npm exec -- eldwin-package-test -- --unit",
-    "test:mock": "npm exec -- eldwin-package-test -- --mock",
-    "test:integration": "npm exec -- eldwin-package-test -- --integration"
+    "test": "npm exec --package @eldwin-ai/eldwin@^0.1.22 -- eldwin-package-test",
+    "test:unit": "npm exec --package @eldwin-ai/eldwin@^0.1.22 -- eldwin-package-test -- --unit",
+    "test:mock": "npm exec --package @eldwin-ai/eldwin@^0.1.22 -- eldwin-package-test -- --mock",
+    "test:integration": "npm exec --package @eldwin-ai/eldwin@^0.1.22 -- eldwin-package-test -- --integration"
   },
   "agentRuntimeDistribution": {
     "visibility": "public",
@@ -31,7 +31,7 @@
     "rationale": "Library extension — shared read-only helpers imported by domain extensions and products."
   },
   "dependencies": {
-    "@eldwin-ai/eldwin": "^0.1.3",
+    "@eldwin-ai/eldwin": "^0.1.22",
     "yaml": "^2.8.1",
     "zod": "^4.1.12"
   },
